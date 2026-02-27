@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turbine Challenge — Instructor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#080f1e;--bg2:#0e1a30;--bg3:#132244;
+  --gold:#d4a84b;--gold2:#c4943a;
+  --text:#dfe6f0;--dim:#5a6b82;--dim2:#3a4a5e;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(160deg,var(--bg1),var(--bg2),var(--bg1));font-family:'Outfit',sans-serif;color:var(--text);min-height:100vh;padding:1.5rem;}
+.gold-text{background:linear-gradient(135deg,#f0c65a,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;}
+.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;}
+.header h1{font-size:1.6rem;}
+.fb-status{font-size:.72rem;padding:.3rem .7rem;border-radius:6px;font-weight:600;letter-spacing:.5px;}
+.fb-ok{background:rgba(34,197,94,.12);color:var(--green);}
+.fb-err{background:rgba(239,68,68,.12);color:var(--red);}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-bottom:1.5rem;}
+.stat-card{text-align:center;padding:1rem;}
+.stat-val{font-size:1.8rem;font-weight:900;}
+.stat-label{font-size:.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:.2rem;}
+.section-title{font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr;}}
+.player-row{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);font-size:.82rem;}
+.player-row:last-child{border-bottom:none;}
+.player-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;}
+.activity-item{padding:.55rem .8rem;border-bottom:1px solid var(--border);font-size:.78rem;}
+.activity-item:last-child{border-bottom:none;}
+.level-bar{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;margin-top:.3rem;}
+.level-fill{height:100%;border-radius:3px;}
+.btn{padding:.6rem 1rem;border-radius:8px;border:none;font-family:'Outfit',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--bg1);}
+.btn-red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.btn-outline{background:transparent;border:1px solid rgba(212,168,75,.3);color:var(--gold);}
+.sound-toggle{position:fixed;bottom:1.5rem;right:1.5rem;width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--border);font-size:1.3rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:99;}
+.pin-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;}
+.pin-box{text-align:center;padding:2rem;}
+.pin-input{width:180px;padding:.8rem;border-radius:10px;border:2px solid rgba(212,168,75,.3);background:rgba(0,0,0,.5);color:var(--text);font-size:1.2rem;font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:6px;outline:none;}
+.pin-input:focus{border-color:var(--gold);}
+.toast{position:fixed;top:1rem;right:1rem;padding:.7rem 1.2rem;border-radius:10px;font-size:.8rem;font-weight:600;z-index:200;opacity:0;transform:translateY(-10px);transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.answer-key{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.answer-key.open{max-height:5000px;}
+.ak-level{margin-bottom:.8rem;}
+.ak-q{font-size:.72rem;padding:.35rem 0;border-bottom:1px solid var(--border);color:var(--dim);}
+.ak-q strong{color:var(--green);}
+</style>
+</head>
+<body>
+
+<!-- PIN OVERLAY -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-box">
+    <div style="font-size:.65rem;letter-spacing:3px;color:var(--gold);font-weight:600;margin-bottom:.5rem">AVIA-1028</div>
+    <h2 class="gold-text" style="font-size:1.4rem;margin-bottom:.3rem">Instructor Dashboard</h2>
+    <p style="font-size:.75rem;color:var(--dim);margin-bottom:1.2rem">Enter PIN to access</p>
+    <input type="password" class="pin-input" id="pinInput" maxlength="4" placeholder="••••" autocomplete="off">
+    <div id="pinError" style="font-size:.72rem;color:var(--red);margin-top:.5rem;min-height:1.2rem"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MAIN DASHBOARD -->
+<div id="dashboard" style="display:none">
+  <div class="header">
+    <div>
+      <div style="font-size:.6rem;letter-spacing:3px;color:var(--gold);font-weight:600">AVIA-1028</div>
+      <h1 class="gold-text">Turbine Challenge</h1>
+      <p style="font-size:.75rem;color:var(--dim)">Instructor Dashboard</p>
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <span class="fb-status" id="fbStatus">Connecting...</span>
+      <button class="btn btn-outline" onclick="toggleAnswerKey()">🔑 Answer Key</button>
+      <button class="btn btn-red" onclick="confirmReset()">🗑️ Reset</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="card stat-card">
+      <div class="stat-val gold-text" id="statPlayers">0</div>
+      <div class="stat-label">Players</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-val" id="statGames" style="color:var(--green)">0</div>
+      <div class="stat-label">Levels Played</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-val" id="statAvgScore" style="color:var(--amber)">0</div>
+      <div class="stat-label">Avg Score</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-val" id="statActive" style="color:var(--green)">0</div>
+      <div class="stat-label">Active Today</div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD + ACTIVITY -->
+  <div class="grid-2">
+    <div>
+      <div class="section-title">🏆 Leaderboard</div>
+      <div class="card" id="lbContainer" style="max-height:500px;overflow-y:auto">
+        <div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">Waiting for players...</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">📡 Live Activity Feed</div>
+      <div class="card" id="activityContainer" style="max-height:500px;overflow-y:auto">
+        <div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">No activity yet...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL BREAKDOWN -->
+  <div class="section-title" style="margin-top:.5rem">📊 Level Performance</div>
+  <div class="card" id="levelBreakdown" style="margin-bottom:1.5rem"></div>
+
+  <!-- ANSWER KEY -->
+  <div class="section-title" style="cursor:pointer" onclick="toggleAnswerKey()">🔑 Answer Key <span id="akArrow" style="font-size:.6rem">▶</span></div>
+  <div class="answer-key" id="answerKey"></div>
+</div>
+
+<!-- SOUND TOGGLE -->
+<div class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<script>
+// ═══ CONFIG ═══
+const PIN = '6343';
+const GAME_KEY = 'turbine_challenge';
+const firebaseConfig = {
+  apiKey: "AIzaSyBsxbbzXHQcylaMi6jYiiczco7ceF7WdPY",
+  authDomain: "escape-room-game-3.firebaseapp.com",
+  databaseURL: "https://escape-room-game-3-default-rtdb.firebaseio.com",
+  projectId: "escape-room-game-3",
+  storageBucket: "escape-room-game-3.firebasestorage.app",
+  messagingSenderId: "190522804892",
+  appId: "1:190522804892:web:9c3f66a57046fbe58ffb59"
+};
+
+const LEVELS_META = [
+  {id:1,name:"Fire Detection",icon:"🔥",color:"#ef4444"},
+  {id:2,name:"Fire Classification",icon:"🏷️",color:"#f59e0b"},
+  {id:3,name:"Fire Suppression",icon:"🧯",color:"#22c55e"},
+  {id:4,name:"Starting Systems",icon:"⚡",color:"#3b82f6"},
+  {id:5,name:"Lubricants & Properties",icon:"🛢️",color:"#8b5cf6"},
+  {id:6,name:"Oil System Components",icon:"⚙️",color:"#06b6d4"},
+  {id:7,name:"Ignition Systems",icon:"🔌",color:"#ec4899"},
+  {id:8,name:"Instruments",icon:"📊",color:"#f97316"},
+  {id:9,name:"Fuel Systems",icon:"⛽",color:"#14b8a6"},
+  {id:10,name:"Engine Maintenance",icon:"🔧",color:"#6366f1"}
+];
+
+const LEAGUES=[
+  {n:"Bronze",i:"🥉"},{n:"Silver",i:"🥈"},{n:"Gold",i:"🥇"},{n:"Platinum",i:"💎"},{n:"Diamond",i:"👑"}
+];
+
+// ═══ STATE ═══
+let db = null;
+let soundEnabled = true;
+let playersData = {};
+let activityData = [];
+let dashboardLoadTime = Date.now();
+
+// ═══ SOUND (Web Audio API) ═══
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, dur, type='sine', vol=0.15){
+  if(!soundEnabled) return;
+  try{
+    audioCtx.resume();
+    const o=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    o.connect(g);g.connect(audioCtx.destination);
+    o.start();o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+
+function soundNewPlayer(){
+  playTone(523,0.1,'sine',0.12);
+  setTimeout(()=>playTone(659,0.1,'sine',0.12),100);
+  setTimeout(()=>playTone(784,0.15,'sine',0.12),200);
+}
+
+function soundLevelComplete(){
+  playTone(440,0.08,'triangle',0.1);
+  setTimeout(()=>playTone(554,0.08,'triangle',0.1),80);
+  setTimeout(()=>playTone(659,0.12,'triangle',0.1),160);
+}
+
+function soundThreeStars(){
+  playTone(523,0.1,'sine',0.15);
+  setTimeout(()=>playTone(659,0.1,'sine',0.15),100);
+  setTimeout(()=>playTone(784,0.1,'sine',0.15),200);
+  setTimeout(()=>playTone(1047,0.25,'sine',0.15),300);
+}
+
+function soundLeagueUp(){
+  [523,587,659,784,880,1047].forEach((f,i)=>{
+    setTimeout(()=>playTone(f,0.12,'square',0.08),i*80);
+  });
+}
+
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  document.getElementById('soundToggle').textContent=soundEnabled?'🔊':'🔇';
+}
+
+// ═══ TOAST ═══
+function showToast(msg, color='var(--gold)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=color==='green'?'rgba(34,197,94,.9)':color==='red'?'rgba(239,68,68,.9)':'rgba(212,168,75,.9)';
+  t.style.color='#fff';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ═══ PIN AUTH ═══
+document.getElementById('pinInput').addEventListener('input', function(){
+  if(this.value.length===4){
+    if(this.value===PIN){
+      document.getElementById('pinOverlay').style.display='none';
+      document.getElementById('dashboard').style.display='block';
+      initFirebase();
+    } else {
+      document.getElementById('pinError').textContent='Incorrect PIN';
+      this.value='';
+      this.style.borderColor='var(--red)';
+      setTimeout(()=>{this.style.borderColor='rgba(212,168,75,.3)';document.getElementById('pinError').textContent='';},1500);
+    }
+  }
+});
+document.getElementById('pinInput').focus();
+
+// ═══ FIREBASE ═══
+function initFirebase(){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.database();
+    document.getElementById('fbStatus').textContent='● Connected';
+    document.getElementById('fbStatus').className='fb-status fb-ok';
+    setupListeners();
+    buildAnswerKey();
+    buildLevelBreakdown();
+  }catch(e){
+    document.getElementById('fbStatus').textContent='● Error';
+    document.getElementById('fbStatus').className='fb-status fb-err';
+    console.error('Firebase error:',e);
+  }
+}
+
+function setupListeners(){
+  // Players
+  db.ref(GAME_KEY+'/players').on('value', snap=>{
+    const prev = Object.keys(playersData);
+    playersData = snap.val()||{};
+    const curr = Object.keys(playersData);
+    
+    // Detect new players
+    curr.forEach(k=>{
+      if(!prev.includes(k)){
+        const p = playersData[k];
+        if(p.lastActive > dashboardLoadTime){
+          showToast(`🆕 ${p.name} joined!`);
+          soundNewPlayer();
+        }
+      }
+    });
+    
+    updateStats();
+    updateLeaderboard();
+    buildLevelBreakdown();
+  });
+
+  // Activity feed
+  db.ref(GAME_KEY+'/activity').orderByChild('timestamp').limitToLast(50).on('child_added', snap=>{
+    const a = snap.val();
+    if(!a) return;
+    
+    if(a.timestamp > dashboardLoadTime){
+      if(a.stars>=3){
+        showToast(`⭐ ${a.player} got 3 STARS on ${a.levelName}!`,'green');
+        soundThreeStars();
+      } else {
+        showToast(`✓ ${a.player} completed ${a.levelName} (${a.pct}%)`);
+        soundLevelComplete();
+      }
+    }
+    
+    activityData.unshift(a);
+    activityData=activityData.slice(0,50);
+    updateActivityFeed();
+  });
+}
+
+// ═══ UI UPDATES ═══
+function updateStats(){
+  const players = Object.values(playersData);
+  const today = new Date().toDateString();
+  const todayMs = new Date().setHours(0,0,0,0);
+  
+  document.getElementById('statPlayers').textContent = players.length;
+  
+  const totalGames = players.reduce((s,p)=>s+(p.games||0),0);
+  document.getElementById('statGames').textContent = totalGames;
+  
+  const avgXP = players.length>0 ? Math.round(players.reduce((s,p)=>s+(p.xp||0),0)/players.length) : 0;
+  document.getElementById('statAvgScore').textContent = avgXP.toLocaleString();
+  
+  const active = players.filter(p=>(p.lastActive||0) > todayMs).length;
+  document.getElementById('statActive').textContent = active;
+}
+
+function updateLeaderboard(){
+  const players = Object.values(playersData).sort((a,b)=>(b.xp||0)-(a.xp||0));
+  if(players.length===0){
+    document.getElementById('lbContainer').innerHTML='<div style="text-align:center;color:var(--dim);padding:2rem;font-size:.82rem">Waiting for players...</div>';
+    return;
+  }
+  
+  let html='';
+  players.forEach((p,i)=>{
+    const bg=i===0?'linear-gradient(135deg,#ffd700,#daa520)':i===1?'linear-gradient(135deg,#c0c0c0,#a0a0a0)':i===2?'linear-gradient(135deg,#cd7f32,#b87333)':'rgba(255,255,255,.06)';
+    const tc=i<3?'#0b1426':'var(--dim)';
+    const lg=LEAGUES[p.league||0];
+    const lvlCount = p.levels?Object.keys(p.levels).filter(k=>p.levels[k]?.s>0).length:0;
+    
+    html+=`<div class="player-row">
+      <div class="player-rank" style="background:${bg};color:${tc}">${i+1}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.85rem">${p.name}</div>
+        <div style="font-size:.6rem;color:var(--dim)">${lg.i} ${lg.n} • ${lvlCount}/10 levels${p.streak>0?' • 🔥'+p.streak:''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;color:var(--gold);font-size:.9rem">${(p.xp||0).toLocaleString()}</div>
+        <div style="font-size:.55rem;color:var(--dim)">XP</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('lbContainer').innerHTML=html;
+}
+
+function updateActivityFeed(){
+  if(activityData.length===0) return;
+  
+  let html='';
+  activityData.slice(0,30).forEach(a=>{
+    const lvl = LEVELS_META.find(l=>l.id===a.level);
+    const starsStr = a.stars>=3?'⭐⭐⭐':a.stars>=2?'⭐⭐':a.stars>=1?'⭐':'';
+    const ago = getTimeAgo(a.timestamp);
+    const color = a.pct>=90?'var(--green)':a.pct>=70?'var(--amber)':'var(--red)';
+    
+    html+=`<div class="activity-item">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span><span style="color:${lvl?.color||'var(--dim)'}">${lvl?.icon||''}</span> <strong>${a.player}</strong> completed <strong>${a.levelName||''}</strong></span>
+        <span style="font-size:.6rem;color:var(--dim)">${ago}</span>
+      </div>
+      <div style="font-size:.68rem;margin-top:.2rem;color:var(--dim)">
+        <span style="color:${color}">${a.pct}%</span> • ${(a.score||0).toLocaleString()} pts • 🔥${a.streak||0} ${starsStr}
+      </div>
+    </div>`;
+  });
+  document.getElementById('activityContainer').innerHTML=html;
+}
+
+function buildLevelBreakdown(){
+  const players = Object.values(playersData);
+  if(players.length===0){
+    document.getElementById('levelBreakdown').innerHTML='<div style="text-align:center;color:var(--dim);padding:1rem;font-size:.82rem">No data yet</div>';
+    return;
+  }
+  
+  let html='';
+  LEVELS_META.forEach(lm=>{
+    let completed=0, totalPct=0, threeStars=0;
+    players.forEach(p=>{
+      const ls = p.levels?.[lm.id];
+      if(ls && ls.s>0){
+        completed++;
+        totalPct += ls.p||0;
+        if(ls.s>=3) threeStars++;
+      }
+    });
+    const avgPct = completed>0 ? Math.round(totalPct/completed) : 0;
+    const compPct = players.length>0 ? Math.round((completed/players.length)*100) : 0;
+    
+    html+=`<div style="display:flex;align-items:center;gap:.8rem;padding:.55rem 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:1.1rem;width:28px;text-align:center">${lm.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.78rem;font-weight:600">Lv.${lm.id} ${lm.name}</div>
+        <div class="level-bar"><div class="level-fill" style="width:${compPct}%;background:${lm.color}"></div></div>
+      </div>
+      <div style="text-align:right;font-size:.68rem;color:var(--dim);white-space:nowrap">
+        <div>${completed}/${players.length} passed</div>
+        <div>Avg ${avgPct}% • ⭐×${threeStars}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('levelBreakdown').innerHTML=html;
+}
+
+// ═══ ANSWER KEY ═══
+function buildAnswerKey(){
+  // We need the full question data — fetch from the student game's LEVELS constant
+  // For now, build a reference list
+  const LEVELS_FULL = getLevelsData();
+  
+  let html='';
+  LEVELS_FULL.forEach(l=>{
+    html+=`<div class="ak-level card" style="margin-bottom:.6rem">
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:${LEVELS_META.find(m=>m.id===l.id)?.color||'var(--text)'}">
+        ${LEVELS_META.find(m=>m.id===l.id)?.icon||''} Lv.${l.id} ${l.name}
+      </div>`;
+    l.qs.forEach((q,qi)=>{
+      html+=`<div class="ak-q">
+        <span style="color:var(--dim2);font-weight:600">${qi+1}.</span> ${q.q}
+        <br><strong>→ ${q.o[q.a]}</strong>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('answerKey').innerHTML=html;
+}
+
+function toggleAnswerKey(){
+  const ak=document.getElementById('answerKey');
+  const arrow=document.getElementById('akArrow');
+  ak.classList.toggle('open');
+  arrow.textContent=ak.classList.contains('open')?'▼':'▶';
+}
+
+// ═══ RESET ═══
+function confirmReset(){
+  if(!confirm('Reset ALL Turbine Challenge data?\n\nThis removes all players, scores, and activity.\nThis cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? Type "RESET" mentally and click OK.')) return;
+  
+  db.ref(GAME_KEY).remove().then(()=>{
+    showToast('All data reset!','red');
+    playersData={};
+    activityData=[];
+    updateStats();
+    updateLeaderboard();
+    updateActivityFeed();
+    buildLevelBreakdown();
+  });
+}
+
+// ═══ HELPERS ═══
+function getTimeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+// Complete question data for answer key
+function getLevelsData(){
+  return [
+{id:1,name:"Fire Detection",qs:[
+{q:"Which zone classification applies to an engine accessory area that is physically isolated from the powerplant?",o:["Zone X","Zone A","Zone B","Zone C"],a:3},
+{q:"What type of detection arrangement relies on individual heat-sensitive switches positioned at multiple locations?",o:["Thermal switch system","Lindberg system","Fenwall system","Photoelectric system"],a:0},
+{q:"What is the fundamental purpose of a fire detection system on a powerplant?",o:["Automatically release suppressant at the fire source","Monitor only the tail section for flames","Activate a cockpit warning when a powerplant fire occurs","Pinpoint the precise coordinates of the fire"],a:2},
+{q:"Which overheat/fire detection system requirement is NOT correct?",o:["Must include a cockpit-accessible electrical test","Must function without AC inverters","Must maintain a continuous warning after the fire is extinguished","Multi-engine types need independent sensor loops per engine"],a:2},
+{q:"How does a pneumatic continuous-loop detector sense a fire condition?",o:["Through thermocouple voltage generation","Via bimetallic contact closure","By gas expansion acting on a diaphragm and contacts","Using ceramic bead resistance changes"],a:2},
+{q:"In which aircraft area would you most likely find a smoke detector installed?",o:["Engine nacelle","Wheel wells","Transport-category cargo compartment","APU compartment"],a:2},
+{q:"Where are carbon monoxide detectors primarily located on an aircraft?",o:["Wheel well areas","Avionics bays","APU compartment","Cabin and cockpit areas"],a:3},
+{q:"Fire protection falls under which ATA chapter number?",o:["26","32","23","25"],a:0},
+{q:"What best describes a spot-type fire detection system?",o:["A single continuous sensing loop","Multiple discrete thermo switches at set locations","Ceramic bead conductors inside an Inconel sheath","A latching system that stays on after suppression"],a:1},
+{q:"What characterizes the Kidde fire detection system?",o:["Pneumatic loop-type sensing","Active thermocouples wired to a relay module","A sealed Inconel tube with two conductors embedded in thermistor material","A control module requiring 115-volt AC power"],a:2},
+{q:"What is considered an undesirable characteristic of the Lindberg detection system?",o:["Extended loops cause slow response times","The control unit is complex and failure-prone","It depends on a 115-volt AC power source","The diaphragm switch closes when heated"],a:2},
+{q:"Which property listed about carbon monoxide is factually INCORRECT?",o:["It is colorless","It is odorless","It is a byproduct of carbon dioxide","It is tasteless"],a:2},
+{q:"The Edison fire detection system operates on which principle?",o:["Warning at a preset temperature threshold","Detection through inert gas expansion","Sensing decreased resistance as temperature rises","Comparing an active thermocouple against a reference thermocouple"],a:3},
+{q:"How is the Systron-Donner detection system tested?",o:["It cannot indicate overheat conditions","Only when titanium wire releases hydrogen gas","By flowing AC current through the outer case","Using the system's built-in integrity switch"],a:3},
+{q:"Which statement about continuous-loop detection systems is TRUE?",o:["Cracked elements can be silver-soldered on the wing","The elements generate their own electrical current","Self-test features eliminate the need for inspections","They can monitor large areas for both fire and overheat"],a:3}
+]},
+{id:2,name:"Fire Classification",qs:[
+{q:"A fire involving energized electrical equipment is classified as which class?",o:["Class A","Class B","Class C","Class D"],a:2},
+{q:"A sealed cargo hold with minimal ventilation receives which fire zone designation?",o:["A","B","C","D"],a:3},
+{q:"How would a nacelle fire involving fuel be classified?",o:["Class A","Class B","Class C","Class D"],a:1},
+{q:"An exhaust fire on a piston engine falls into which fire zone?",o:["Zone A","Zone C","Zone D","Zone X"],a:0},
+{q:"What fire class applies to burning seat cushion material?",o:["A","B","C","D"],a:0},
+{q:"An area with minimal air movement would be assigned which zone classification?",o:["A","C","D","X"],a:2},
+{q:"What defines a Class D fire zone?",o:["High uniform airflow","Turbulent airflow patterns","Elevated fire risk","Little or no air circulation"],a:3},
+{q:"What sensing technology is used in smoke detectors?",o:["Thermocouples","Bimetallic strips","Photoelectric or ionization sensing","Pressure transducers"],a:2},
+{q:"Which type of smoke detector compares two semiconductor elements?",o:["Solid state type","Ionization type","Light refraction type","Photocell type"],a:0},
+{q:"Flame detectors produce a warning when:",o:["A thermocouple generates current from heat","A photocell detects reduced light from smoke","A photocell changes resistance due to temperature","A photocell generates current from increased light energy"],a:3},
+{q:"In a turbine engine detection system, a thermal switch detector is classified as a:",o:["Flame detector","Spot detector","Smoke detector","Continuous-loop detector"],a:1},
+{q:"Continuous-loop fire detection systems use what material to insulate the circuit?",o:["Thermistor material","A relay component","Sealed gas","Bimetallic strips"],a:0},
+{q:"What should fire sensing elements primarily be inspected for?",o:["Grommet condition in mounting clamps","Placement and arrangement","Pre-flight serviceability","Current loss"],a:0},
+{q:"Portable extinguishers with a green-range gauge are exempt from re-weigh and hydrostatic testing — true or false?",o:["True","False","Only for Halon types","Only after 5 years of service"],a:1},
+{q:"Service life data stamped on discharge cartridges is expressed in what units?",o:["Calendar months","Calendar years","Hours","Alphanumeric coding"],a:2}
+]},
+{id:3,name:"Fire Suppression",qs:[
+{q:"Under CAR 705.93(6), what is the minimum number of Halon 1211 hand extinguishers required?",o:["2","3","1","4"],a:0},
+{q:"After a fire bottle is discharged from the cockpit, what external indicator is visible?",o:["A ruptured red disc","A ruptured green disc","A ruptured yellow disc","Both red and yellow discs ruptured"],a:2},
+{q:"How does a CO2 extinguishing agent primarily suppress fire?",o:["By producing toxic gases","By being effective on Class A and D fires","Through cooling combined with oxygen displacement","By leaving a heavy white residue"],a:2},
+{q:"What action does an HRD system squib perform when activated?",o:["Fires a projectile through a frangible disc","Operates indefinitely with no life limit","Requires no handling precautions","Pressurizes the bottle upon firing"],a:0},
+{q:"How is the serviceability of an HRD extinguisher bottle verified?",o:["Comparing the gauge reading to a temperature-pressure chart","Visual inspection of discharge discs only","Weighing the bottle only","Checking cockpit indicator lights only"],a:0},
+{q:"What component electrically releases the extinguishing agent from its container?",o:["Siphon tube","Operating valve","Squib","Fusible plug"],a:2},
+{q:"What indicates that a stationary HRD bottle has discharged thermally?",o:["Yellow disc blown out with green visible","Agent residue on the bonnet assembly","Yellow disc blown out plus cockpit low-pressure warning","Red indicator disc blown out"],a:3},
+{q:"Where is the frangible disc located in an HRD system?",o:["Between the control unit and warning light","Between the sensor and integrity switch","Above the firing bonnet at the container exit opening","Inside the fusible safety plug"],a:2},
+{q:"A CO2 extinguisher may include a nitrogen charge to prevent:",o:["Interior corrosion of the bottle","Excess heat during filling","Premature discharge at temperatures up to 160°F","Snow effect during discharge"],a:2},
+{q:"If HRD container pressure falls outside specifications, the required action is:",o:["Pressure decreases are normal with temperature rise","Gauges auto-compensate for temperature","An AME adjusts it into acceptable range","The container must be replaced"],a:3},
+{q:"An HRD container equipped with two squibs allows:",o:["Discharge to two or more separate zones","The second squib to serve as backup","A second agent charge to be carried","Both squibs to fire simultaneously at the disc"],a:0},
+{q:"What is the standard extinguishing agent used in HRD fire suppression systems?",o:["Carbon dioxide","Dry chemical powder","Aqueous foam","Halon 1301"],a:3},
+{q:"Which fire suppression system type uses a mechanical valve operated from the cockpit?",o:["HRD system","Conventional system","Carbon monoxide system","Both HRD and conventional systems"],a:1},
+{q:"HRD containers use what type of seal to retain the agent?",o:["Threaded lead plug","Fiberglass insert","Frangible disc","Temperature gauge"],a:2},
+{q:"HRD fire extinguisher bottles are pressurized with:",o:["Halon gas","Dry nitrogen","Oxygen","Compressed air"],a:1},
+{q:"When inspecting a hand-held cockpit fire extinguisher, which is true?",o:["Weight indicates the amount of agent remaining","Pressure gauge shows propellant charge","A label provides hydrostatic testing intervals","All of these statements are correct"],a:3},
+{q:"What does the code 'SF' stamped on an extinguisher body bushing indicate?",o:["Small fire capability","Requires a soft flexible mount","Install the cylinder vertically","Install the cylinder horizontally"],a:3},
+{q:"What safety precaution applies when handling HRD discharge cartridges?",o:["They should be properly grounded","They should be stored in a cool dry place","System pressure must be depleted first","Insulated tooling must be used"],a:0}
+]},
+{id:4,name:"Starting Systems",qs:[
+{q:"During a turbojet start, what indicates a hot start condition?",o:["EGT exceeding specified limits","An excessively lean fuel mixture","Engine start taking 60-80 seconds","Starter indicator light going off"],a:0},
+{q:"If a turbine engine lights off but fails to accelerate to idle RPM, this is called a:",o:["Hot start","Hung start","Over-speed event","Pressure ratio exceedance"],a:1},
+{q:"What is the correct sequence for starting a turbo-jet engine?",o:["Ignition, starter, fuel","Fuel, starter, ignition","Starter, ignition, fuel","Starter, fuel, ignition"],a:2},
+{q:"What starter type is most widely used on corporate jet and small turbine aircraft?",o:["Electric starter","Starter-generator","Air turbine starter","Compression starter"],a:1},
+{q:"Which starter design offers the highest power-to-weight ratio?",o:["Electric starter","Starter-generator","Air turbine starter","Compression starter"],a:2},
+{q:"What type of air supply does a standard pneumatic starter require?",o:["High pressure, low volume","Low pressure, high volume","Low pressure, low volume","High pressure, high volume"],a:1},
+{q:"Of all turbine engine starter types, which one remains permanently engaged with the engine?",o:["Air starter","Combustion starter","Starter-generator","Electric starter"],a:2},
+{q:"On a dual-spool turbine engine, the starter drives which compressor?",o:["All rotating assemblies","Either spool as selected","The high-speed N2 compressor","The low-speed N1 compressor"],a:2},
+{q:"What is the correct response to a hung start during an engine ground run?",o:["Add throttle to drive the engine to speed","Shut down the engine per operating procedures","Adjust the FCU part-power setting","Replace the starter unit"],a:1},
+{q:"A typical air turbine starter consists of what main components?",o:["Dual reversing clutch and air valve","Armature, butterfly valve, and air valve","Clutch assembly, gears, and Bendix drive","Clutch assembly, reduction gears, and air supply valve"],a:3},
+{q:"Once the engine reaches self-sustaining speed, the pneumatic starter disengages through:",o:["Centrifugal force acting on the pawls","Centrifugal force on the butterfly valve","Spring force","Airflow through the valve"],a:0},
+{q:"A turbine engine starter-generator combination typically uses:",o:["A high-volume low-pressure air source","A starter solenoid and undercurrent solenoid","An undercurrent solenoid and bellows","A starter solenoid and magnetic shunt relay"],a:1},
+{q:"On a starter-generator, what component disconnects the starter function after the engine starts?",o:["Inertia switch","Speed sensor","Generator load meter","Undercurrent solenoid"],a:3},
+{q:"In a pneumatic starter, what force disengages the drive pawls?",o:["Spring tension","Centrifugal force","Electric solenoid actuation","Gravity"],a:1},
+{q:"An O-ring seal on a starter-generator's splined drive shaft indicates what condition?",o:["QAD-type attachment","Oversized spline condition","Dry spline operation","Wet spline (oil-lubricated) operation"],a:3},
+{q:"When installing or removing a starter from a turbine engine, what is always important?",o:["Ensure a new replacement each install","Support the starter as the driveshaft bends easily","All hardware must use fiber lock nuts","Splines must be overhauled at every removal"],a:1},
+{q:"Typical routine maintenance on a turbine air starter includes:",o:["Manually cycling the butterfly valve","Borescope inspection and magnetic plug check","Borescope and pawl spring tension adjustment","Checking the magnetic drain plug and servicing the oil"],a:3},
+{q:"If a turbine engine starts but won't accelerate to idle, a possible starter-generator fault could be:",o:["Insufficient voltage supply","Insufficient amperage","N1 under-speed condition","Insufficient air bleed"],a:0},
+{q:"An air turbine starter failing to accelerate the engine to self-sustaining speed most likely has:",o:["A defective undercurrent relay","A stuck air supply valve","Low starter air supply pressure","A disengaged sprag clutch"],a:2}
+,
+{q:"Which of the following is NOT a potential cause of a hung start?",o:["Starter cutout occurring too soon","External power source providing insufficient rotation speed","Exhaust gas temperature being too low","Idle setting on the FCU rigged too low"],a:2},
+{q:"If the fire warning light illuminates during the engine start cycle, the appropriate action is:",o:["Evacuate immediately and notify supervisor","Allow engine to reach self-sustaining speed before cutting power","Increase throttle and deploy thrust reversers","Cut fuel and continue motoring with the starter before using extinguishant"],a:3},
+{q:"If a turbine engine fails to turn over during a start attempt, a probable remedy is to verify the:",o:["Master switch is on","Generator is turned on","Fuel valve is turned off","Non-essential bus is in normal mode"],a:0},
+{q:"Starter brushes found chipped on the trailing edge would suggest:",o:["The HP compressor was rotated backwards","Brushes have worn beyond serviceable limits","Starter-generator experienced an over-speed","The starter-generator is defective"],a:0}]},
+{id:5,name:"Lubricants & Properties",qs:[
+{q:"Which of the following is NOT a type of bearing seal used in gas turbine engines?",o:["Carbon face seal","Carbon ring seal","Labyrinth seal","Periseal"],a:3},
+{q:"What does a high viscosity index indicate about an oil?",o:["Minimal viscosity change with temperature","Large viscosity change with temperature","High viscosity change over service life","Minimal viscosity change over service life"],a:0},
+{q:"What is the MIL-Spec designation for Type II turbine oil?",o:["MIL-T-23699","MIL-L-7808","MIL-G-23699","MIL-L-23699"],a:3},
+{q:"What is a key advantage of synthetic lubricants in high-performance turbine engines?",o:["No filtering needed and lower cost","Petroleum oils have poor chemical stability","Required additives won't mix with petroleum","Less tendency to form lacquer or coke and lower evaporation"],a:3},
+{q:"How does a labyrinth seal function?",o:["Carbon face contact sealing","Rubber lip contact sealing","Grooves generating high air pressure","Air bleeding inward across the grooves"],a:3},
+{q:"Why are low-viscosity oils specified for gas turbine engine bearings?",o:["Tight tolerances and relatively low bearing pressures","Better cushioning between bearing surfaces","Loose tolerances and high bearing pressures","Superior capillary action for distribution"],a:0},
+{q:"Which statement about turbine engine oil properties is INCORRECT?",o:["Different brands should not be mixed due to additive differences","Synthetic oils don't need anti-foaming additives","Wide temperature range and high viscosity index","Low volatility prevents evaporation at altitude"],a:1},
+{q:"What type of lubricating oil is used in turbine aircraft engines?",o:["Synthetic","Petroleum-based","50-50 petroleum and synthetic blend","70-30 petroleum and synthetic blend"],a:0},
+{q:"In an emergency, turbine engine oils:",o:["Are compatible with mineral-base oils","Must never be mixed with mineral-base oils","Can only be mixed with multi-grade oils","Can only be mixed with ashless dispersant oils"],a:1},
+{q:"What problem results from turbine oil being contaminated with silicon-based lubricants?",o:["Decreased viscosity index","Reduced viscosity","Foaming","All of these effects"],a:2},
+{q:"Which characteristic is true of turbine engine oil?",o:["It is mineral-based","It has low volatility","It never foams","It has a high pour point"],a:1},
+{q:"When servicing a PT6 engine that is low on oil, which statement is correct?",o:["Wait 30 minutes after shutdown for oil to settle into bearing sumps","Mineral-based ashless dispersant oil is acceptable as a substitute","Turbine oil contains toxic additives so safety gloves are advised","Free turbine engines use sealed bearings and don't need oil addition"],a:2},
+{q:"Which statement about synthetic turbine engine oil is FALSE?",o:["It has high viscosity and low viscosity index","It has low viscosity and high viscosity index","It operates over a wide temperature range","It has excellent cohesion and adhesion properties"],a:0},
+{q:"Which turbojet engine component transfers the most heat to the oil?",o:["Rotor coupling","Compressor bearing","Accessory drive bearing","Turbine bearing"],a:3},
+{q:"Under what oil condition is the cooler bypass valve open the widest?",o:["Normal operating temperature","Above normal temperature","Below normal temperature","Engine stopped after run-up"],a:2}
+]},
+{id:6,name:"Oil System Components",qs:[
+{q:"Why are fixed-orifice nozzles used in gas turbine lubrication systems?",o:["To provide relatively constant oil flow to bearings at all engine speeds","To maintain back pressure preventing pump air locks","To protect oil seals from excessive cavity pressure","To reduce overall oil system pressure"],a:0},
+{q:"What methods are used to cool oil in gas turbine engines?",o:["Fuel-cooled heat exchangers only","Ram air coolers only","Neither method is used","Both fuel-cooled and ram air heat exchangers"],a:3},
+{q:"In a jet engine oil-fuel heat exchanger, the thermostatic valve regulates the flow of:",o:["Air passing the exchanger","Fuel through the exchanger","Both fuel and oil through the exchanger","Oil through the heat exchanger"],a:3},
+{q:"What oil system design is standard on turbojet engines?",o:["Dry sump with pressure and spray lubrication","Wet sump with dip and pressure lubrication","Dry sump with dip and splash lubrication","Wet sump with spray and splash lubrication"],a:0},
+{q:"A self-contained dry-sump turbine engine lubrication system consists of which sub-systems?",o:["Same storage arrangement as wet-sump engines","No heat exchanger is included","Pressure, breather, and scavenge sub-systems","Oil stored in the engine crankcase"],a:2},
+{q:"What is the most common type of oil pump on turbojet engines?",o:["Gear pump","Centrifugal pump","Vane pump","Diaphragm pump"],a:0},
+{q:"Where is the main oil supply housed in a modern gas turbine engine?",o:["In an oil tank","In the accessory section","In the gearbox","In the can-annular combustor"],a:0},
+{q:"In a dry-sump system, oil returns to the tank via:",o:["The main pressure pump","The scavenge pump","Gravity drain","The pressure distribution pump"],a:1},
+{q:"Gear-type, vane-type, and gerotor pumps are all classified as:",o:["Variable displacement pumps","Constant displacement pumps","Centrifugal pumps","Axial flow pumps"],a:1},
+{q:"The term 'micron' is used in reference to:",o:["Oil pump capacity ratings","A type of oil pump","A synthetic oil grade","Oil filter ratings"],a:3},
+{q:"Last-chance filters in a turbine lubrication system are normally cleaned:",o:["At annual inspections","During engine overhaul","At 100-hour inspections","During every oil change"],a:1},
+{q:"Turbine engine oil coolers are best described as:",o:["De-aeration devices","Liquid-to-liquid or liquid-to-air heat exchangers","Primarily fuel cooling devices","Unnecessary due to ram air cooling"],a:1},
+{q:"What prevents cold oil from circulating through the oil cooler?",o:["A differential pressure valve in the pump","A restriction in the scavenge system","A thermostatic bypass valve","A restriction in the pressure system"],a:2},
+{q:"In a 'hot tank' oil system, scavenged oil is:",o:["Returned directly to the tank from the scavenge pumps","Heated within the tank","Routed from scavenge directly to the pressure pump","Dumped into a hopper tank"],a:0},
+{q:"If the oil system pressure relief valve sticks open, the result would be:",o:["Higher than normal oil pressure","Lower than normal oil temperature","Insufficient lubrication to bearings","Pressurization of the engine case"],a:2},
+{q:"Oil servicing on a turbine engine should be carried out:",o:["A short time after engine shutdown","Only before the first flight of the day","Only at 100-hour inspections","None of these is standard practice"],a:0}
+]},
+{id:7,name:"Ignition Systems",qs:[
+{q:"Turbine igniter plugs handle much higher voltage than recip spark plugs yet last longer — why?",o:["They run at lower temperatures","The electrode gap is smaller","They sit outside the combustion zone","They only operate intermittently, not continuously"],a:3},
+{q:"Why do turbine ignition systems need to produce high energy levels?",o:["To ignite fuel at high altitude and high temperature","Because applied voltage is much greater","To ignite fuel at high altitude and low temperature conditions","Because applied voltage is much lower"],a:2},
+{q:"On a turbine engine with nine can-type combustion chambers, how many igniters are installed?",o:["One","Two","Three","Nine"],a:1},
+{q:"When is the ignition system normally de-energized on a turbojet engine?",o:["As soon as the engine is running","Only after a warm-up period","It is never used during flight","At engine shutdown"],a:0},
+{q:"Why are turbine igniters less prone to fouling than reciprocating engine spark plugs?",o:["The high-energy spark burns off any deposits","The spark frequency is lower than spark plugs","Igniters operate at cooler temperatures","Turbine fuel contains no contaminants"],a:0},
+{q:"What type of ignition system is used on most jet aircraft engines?",o:["High resistance","Magneto","Low tension","Capacitor discharge"],a:3},
+{q:"What is the main difference between a turbine igniter and a reciprocating engine spark plug?",o:["The igniter has a wider electrode gap","The spark plug has a wider gap","Both have the same gap dimension","Gap size is not a relevant factor"],a:0},
+{q:"What distinguishing component is found in an AC-powered ignition system?",o:["A vibrator unit","An auto transformer","A permanent magnet generator","A rectifier"],a:1},
+{q:"In a DC capacitor-discharge ignition system, where is the firing energy stored?",o:["In a resistor","In an inductor","In a capacitor","In the transformer"],a:2},
+{q:"What is the primary advantage of a constrained-gap igniter design?",o:["Produces higher energy output","Requires lower input voltage","Provides a controlled and predictable spark location","Easier to clean and maintain"],a:2},
+{q:"Turbine engine igniters have wider gaps than recip spark plugs because the combustion chamber has:",o:["Greater available voltage","Lower electrode resistance","Lower operating pressures at altitude","Less voltage demand"],a:2},
+{q:"When dual igniters are installed, what clock positions are they typically mounted at?",o:["10 and 2 o'clock","8 and 4 o'clock","9 and 3 o'clock","12 and 6 o'clock"],a:1},
+{q:"Ignition system energy output is rated in what unit of measurement?",o:["Joules","Henries","Farads","Coulombs"],a:0},
+{q:"Can high-voltage and low-voltage igniters be swapped between systems?",o:["Yes, they are interchangeable","No, they are not interchangeable","Only high-voltage into low-voltage systems","Only low-voltage into high-voltage systems"],a:1},
+{q:"What is the approved method for cleaning turbine engine igniters?",o:["Abrasive blasting","A felt swab moistened with solvent","Same methods used for recip spark plugs","Dry compressed air only"],a:1},
+{q:"Why must special care be taken when performing ignition system maintenance?",o:["Some transformers contain radioactive material","The stored electrical charge can be lethal","The system must be fully discharged before work","All of these precautions apply"],a:3},
+{q:"What does the term 'duty cycle' mean in the context of ignition systems?",o:["Total time required to complete a start","Time required for engine shutdown","The duration that ignition is energized","Cooling period for glow plug elements"],a:2},
+{q:"What is the secondary function of the main ignition system?",o:["Providing ground start capability","Standby protection against in-flight flameouts","Exciting a second igniter plug","Powering a backup transformer unit"],a:1},
+{q:"In a DC capacitor-discharge ignition system, where are the high-voltage pulses formed?",o:["At the breaker","At the trigger transformer","At the rectifier","At the vibrator"],a:3},
+{q:"If long intervals between ignition sparks are observed, what should be suspected?",o:["Dirty igniter plug","Damaged ignition lead","Missing igniter gasket","Weak battery"],a:3}
+]},
+{id:8,name:"Instruments",qs:[
+{q:"Turbine engine tachometers display readings in what units?",o:["Percent of engine RPM","Actual RPM","Pounds per square inch","Percent of engine pressure ratio"],a:0},
+{q:"What type of sensor measures turbojet engine exhaust temperature?",o:["Iron/constantan thermocouples","Electrical resistance thermometers","Ratiometer instruments","Chromel/alumel thermocouples"],a:3},
+{q:"Which instrument should be monitored to minimize the risk of a hot start?",o:["RPM indicator","Turbine inlet temperature","Horsepower meter","Torquemeter"],a:1},
+{q:"Which parameter is used to monitor turbine mechanical integrity and engine operating conditions?",o:["Engine oil pressure","Exhaust gas temperature","Engine oil temperature","Engine pressure ratio"],a:1},
+{q:"What is the primary purpose of the tachometer on an axial-compressor turbine engine?",o:["Monitor cruise RPM settings","Establish thrust settings","Monitor RPM during starting and detect overspeed","Prevent overtemperature conditions"],a:2},
+{q:"The engine pressure ratio indicator directly shows:",o:["Pressure within the turbine section","The thrust being produced by the engine","Pressure rise across the compressor","Pressure within the diffuser section"],a:1},
+{q:"Which cockpit instrument monitors the single most critical engine parameter?",o:["Engine pressure ratio","Tachometer","Oil pressure","Exhaust gas temperature"],a:3},
+{q:"When temperature is measured downstream of the turbine wheels, it is designated:",o:["EGT","ITT","TIT","OAT"],a:0},
+{q:"Turbine engine exhaust gas temperature gauges typically display in:",o:["Degrees Celsius","Degrees Fahrenheit","Percent of RPM","Percent of OAT"],a:0},
+{q:"A thermocouple-type oil temperature system is powered by:",o:["28 volts DC","120 volts AC","28 volts AC","Its own self-generated voltage"],a:3},
+{q:"What is the first cockpit indication that combustion has started in a turbine engine?",o:["A drop in exhaust gas temperature","An increase in fuel flow indication","A decrease in engine pressure ratio","A rise in exhaust gas temperature"],a:3},
+{q:"If an engine shows normal power, high temperature, but normal fuel flow and RPM, what is likely?",o:["Torque or EPR indication error","Temperature indication error","Fuel flow indication error","Tachometer error"],a:1},
+{q:"A brief simultaneous fluctuation in all engine parameters during initial takeoff roll suggests:",o:["A momentary compressor stall","An electrical system voltage spike","Foreign object damage","None of these conditions"],a:0},
+{q:"What engine condition results from contaminated or dirty compressor blades?",o:["Lower than normal RPM","Lower than normal EGT","Higher than normal RPM","Higher than normal EGT"],a:3},
+{q:"An engine showing high EGT, high fuel flow, and low RPM at all power settings likely has:",o:["Insufficient instrument bus power","Fuel control maladjustment","Loose or corroded thermocouple probes","Turbine damage or reduced turbine efficiency"],a:3}
+,
+{q:"What effect does relative humidity have on turbojet engine thrust?",o:["It is calculated as part of engine EPR","It has a negligible effect on thrust","It is measured by an engine inlet humidity sensor","It has a significant negative effect on thrust"],a:1},
+{q:"What is the expected result of adjusting the governor speed down and performing a compressor wash?",o:["Decreased RPM","Increased compression RPM","Increased fuel flow to the governor","No change in engine parameters"],a:0}]},
+{id:9,name:"Fuel Systems",qs:[
+{q:"What is the primary difference between Jet A and Jet A-1 fuel?",o:["Their color","Freeze point: Jet A at -40°C vs Jet A-1 at -47°C","Regional availability","Octane rating"],a:1},
+{q:"All turbine engine fuels are based on what petroleum product?",o:["Kerosene","Diesel fuel","Naphtha","Varsol"],a:0},
+{q:"During a fuel sample on a turboprop, you notice the fuel is blue. What is the most likely cause?",o:["Excessive fungicidal additive was used during fueling","Jet B fuel was loaded instead of Jet A-1","Avgas was loaded instead of Jet A-1","This is normal — Jet A-1 appears blue in a clear-and-bright test"],a:2},
+{q:"What is the principal advantage of a duplex fuel nozzle?",o:["It restricts flow for more complete combustion","It provides superior atomization and a uniform spray pattern","It allows a wider range of fuel types","It requires less filtration due to dual passages"],a:1},
+{q:"Which type of fuel control would NOT be found on a turbofan engine?",o:["Supervisory EEC with hydromechanical backup","Standalone hydromechanical fuel control","Full authority EEC","Hydropneumatic fuel control"],a:3},
+{q:"What is the function of a fuel-oil heat exchanger on a turbojet engine?",o:["Removes oil vapor from the fuel","Aerates the fuel supply","Emulsifies the oil","Raises the fuel temperature while cooling the oil"],a:3},
+{q:"What provides the heat source for a turbine engine fuel heater?",o:["Exhaust gas heat muff","Electrical heating element","Hot engine oil","No heater is required for kerosene fuels"],a:2},
+{q:"What are the two common types of fuel nozzles used in turbine combustion chambers?",o:["Constant flow and variable flow","Low pressure and high pressure","Simplex and duplex","Idle-range and cruise-range"],a:2},
+{q:"Which type of turbine fuel filter provides the finest filtration?",o:["Micron-rated filter","Wire mesh screen","Wafer screen","Stacked charcoal element"],a:0},
+{q:"What method monitors the risk of fuel ice crystal formation on turbine aircraft?",o:["Fuel pressure warning system","Fuel pressure gauge reading","Fuel strainer pressure gauge","Fuel temperature indicator"],a:3},
+{q:"What must be done after replacing a fuel control unit on a turbine engine?",o:["Re-time the engine","Recalibrate the fuel nozzles","Re-trim the engine","Check the flame pattern"],a:2},
+{q:"Under which conditions will a turbine engine trim procedure be most accurate?",o:["Low humidity with a tailwind","High wind and high humidity","High humidity with low wind","Calm wind and low humidity"],a:3},
+{q:"When trimming a turbine engine, what is the fuel control adjusted to do?",o:["Produce maximum possible engine power","Set idle RPM and maximum speed limits","Allow maximum RPM regardless of power output","Restrict power to 100% without regard to RPM"],a:1},
+{q:"Why must acceleration and deceleration rates be controlled in turbine engines?",o:["To prevent flameout or blowout","To prevent overtemperature","To allow controlled heating and cooling rates","To prevent turbine-to-case friction from thermal changes"],a:0},
+{q:"All adjustments to a fuel control unit should be made in which direction?",o:["Only in a test cell environment","In the increasing direction","Only within the nacelle","In the direction of rotation"],a:1},
+{q:"What is the incorrect statement about gas turbine fuel properties?",o:["Turbine fuels are more viscous than Avgas","Jet fuel serves as hydraulic fluid for stator vanes and actuators","Water in jet fuel creates icing and microbial growth risk","Turbine fuels are less viscous than Avgas"],a:0},
+{q:"The sulfur content limit for Jet A and Jet A-1 fuel is:",o:["0.08% by weight","0.08% by volume","0.05% by volume","0.05% by weight"],a:3},
+{q:"In a turbine fuel system, the finest filter with the smallest micron rating is located between the:",o:["Boost pump and engine-driven fuel pump","Engine-driven fuel pump and fuel control","Fuel control and fuel nozzles","Fuel tank and boost pump"],a:1},
+{q:"Fuel consumption in turbine engines is measured in:",o:["Gallons per minute","Pounds per minute","Gallons per hour","Pounds per hour"],a:3},
+{q:"What variables does a turbine engine FCU sense to meter fuel?",o:["Engine speed, inlet pressure, compressor discharge pressure, burner pressure","Airspeed, rate of climb, and density altitude","Prop speed, airspeed, and gear position","Engine speed, ram air, inlet temp, and EGT"],a:0},
+{q:"Which component controls power increase and decrease through all operating conditions?",o:["APU","FCU","ECU","None of these"],a:1},
+{q:"A hydromechanical fuel control unit operates using:",o:["Constant pressure regulation","Pressure-controlled metering","Mechanical linkage only","Fluid servos and mechanical forces"],a:3}
+,
+{q:"What is the primary purpose of trimming a turbine engine fuel control?",o:["To establish new EGT limits","To obtain maximum thrust output when desired","To properly position the power levers","To adjust the idle RPM only"],a:1},
+{q:"Under what circumstances is trimming of a turbine engine required?",o:["Only after overhaul in a test cell","Only after fuel control replacement","Only when low thrust is suspected","All of these situations"],a:3},
+{q:"To perform a part-power trim, the turbine engine must be:",o:["Run at full power and adjusted","Run at idle and adjusted","Blocked at a specific control position","Done only with manufacturer permission"],a:2}]},
+{id:10,name:"Engine Maintenance",qs:[
+{q:"An engine that comes to a complete stop after striking an immovable object has experienced:",o:["Over-speed","Foreign object damage","Over-torque","Sudden stoppage"],a:3},
+{q:"When removing a turbine engine from an aircraft, what critical step must always be performed?",o:["Disconnect the battery","Drain all fuel tanks","Support the airframe and chock the wheels","Disconnect the fire suppression squibs"],a:2},
+{q:"When an engine is removed with the propeller and nacelle still attached, this assembly is called a:",o:["RERS — Rapid Engine Removal System","QECA — Quick Engine Change Assembly","TPQRS — Turbo-Prop Quick Removal System","QERI — Quick Engine Removal and Installation"],a:1},
+{q:"Which statement about engine preservation for long-term storage is INCORRECT?",o:["Engines are sealed in containers with desiccant","Inhibiting oil is introduced into fuel lines which are then sealed","Mainline bearings are removed and stored separately","Engines can be preserved while still installed on the aircraft"],a:2},
+{q:"When turbine blades are subjected to extreme temperatures, what type of failure occurs?",o:["Compression and torsion failure","Bending and torsion failure","Torsion and tension failure","Stress rupture"],a:3},
+{q:"Would a transient compressor stall during normal operation normally require engine removal?",o:["Not normally","Always","Only after borescope inspection","Only if repeated multiple times"],a:0},
+{q:"How can foreign object damage be prevented?",o:["Using inlet and exhaust covers","Performing pre-flight inlet inspections","Keeping loose clothing and articles away from engines","All of these methods"],a:3},
+{q:"If EPR has been trending down while EGT trends up on both engines, the recommended action is:",o:["Adjust variable bleed valve spring tensions","Perform a performance recovery compressor wash","Conduct a spectrometric oil analysis","Adjust fuel controls to increase cruise fuel flow"],a:1},
+{q:"What term describes the permanent, progressive deformation of turbine blades over time?",o:["Stretch","Elongation","Distortion","Creep"],a:3},
+{q:"When replacing a turbine wheel blade, what practices are acceptable?",o:["Replace with a blade of matching moment-weight","Replace damaged blade plus one at 180° of equal moment-weight","Replace damaged blade plus two at 120° of equal moment-weight","Any of these methods are acceptable"],a:3},
+{q:"The hot section of a turbine engine is particularly susceptible to which type of damage?",o:["Scoring","Pitting","Cracking","Galling"],a:2},
+{q:"Parts in the hot section of a turbine engine should be marked using:",o:["Any convenient marking method","A felt-tip marker","A lead pencil","A special copper-based marker"],a:1},
+{q:"In compressor blade repair, 'blending' refers to recontouring damaged blades by:",o:["Hand filing and finishing","Power tool grinding","Welding and reshaping","Machine resurfacing"],a:0},
+{q:"Severe rubbing of turbine engine compressor blades typically causes:",o:["Bowing","Cracking","Burning","Galling"],a:3},
+{q:"When a compressor is to be fluid washed, the engine must be:",o:["Static and cold","Running at low speed or being motored","Running at high speed","Running at cruise speed"],a:1},
+{q:"Stress rupture cracks in turbine blades are primarily caused by:",o:["Excessive rotational speeds","Excessive heat exposure","Excessive cooling cycles","Prolonged idle operation"],a:1},
+{q:"Where do stress rupture cracks typically appear on turbine blades?",o:["Across the blade root parallel to the fir tree","Along the trailing edge parallel to the edge","Along the leading edge parallel to the edge","Across the leading or trailing edge at right angles"],a:3},
+{q:"Which statement about turbine compressor blade repair is INCORRECT?",o:["Blending can be done by hand with a file and crocus cloth","Large damage can be scalloped out with air tools and coarse pumice pads","Light damage within limits may be left unrepaired","A typical blend has a length-to-depth ratio of 4:1"],a:1},
+{q:"A task that would NOT be common after installing a recently overhauled turbine engine is:",o:["Shimming engine mounts for proper alignment","Checking adjustment of engine controls for smooth movement","Performing a ground run to verify engine trim","Performing a dry crank for a compressor wash"],a:3},
+{q:"What is the emergency procedure when engine temperature exceeds limits during start?",o:["Cut fuel to the engine","Release or turn off the starter","Turn off the battery","Apply full throttle to clear the condition"],a:0},
+{q:"Improper airflow to the combustion chamber will result in:",o:["A compressor stall","Engine over-speed","Engine over-torque","Fuel nozzle choking"],a:0},
+{q:"A turbine engine requires a cool-down period before shutdown to:",o:["Allow oil-contacted surfaces to return to normal temperature","Burn off excess fuel ahead of the fuel control","Allow the turbine wheel to cool before the case contracts around it","Prevent seizure of the engine bearings"],a:2},
+{q:"Reduced turbine engine performance can be caused by:",o:["Accumulation of contaminants on the compressor","A fluid wash procedure","An abrasive grit blast cleaning","A weak igniter plug"],a:0}
+,
+{q:"During engine removal and installation, power level control cables are typically:",o:["Not disturbed, requiring no re-rigging; re-rig from pylon to engine after changes","Disturbed, requiring rigging from firewall to engine","Not disturbed, but require rigging from airframe to pylon","Disturbed, requiring rigging from pylon to fuel pump"],a:0},
+{q:"For air carrier operations, who establishes the recommended TBO for turbine engines?",o:["The engine manufacturer","The operator with Transport Canada","The owner/operator alone","Transport Canada exclusively"],a:0},
+{q:"Who establishes mandatory replacement times for critical turbine engine components?",o:["The owner/operator","Transport Canada","The operator with Transport Canada","The engine manufacturer"],a:3},
+{q:"For general aviation, who establishes the recommended TBO for turbine engines?",o:["The engine manufacturer","The operator with Transport Canada","The owner/operator","The DOT"],a:0},
+{q:"When removing a turbojet engine for maintenance or test cell operation, work must be done:",o:["Under Transport Canada representative supervision","Per airframe and engine manufacturer instructions","Only per AC 43-13-1B and 2A","By Transport Canada at their facility"],a:1},
+{q:"Which statement about turbine engine removal procedures is correct?",o:["Turbine and recip engines follow similar TBO schedules","Propellers are integral to the RGB and removed with the engine","Many removals require tail stands or fuselage supports for weight balance","Engines are attached by modules and not removed as a complete unit"],a:2},
+{q:"Which statement about turbine engine removal is INCORRECT?",o:["Engine mount inspection may include DPI or MPI for cracks","Turboprop mounts differ from turbofan engine mounts","Wing engines use pylons and fuselage engines use thrust struts","Helicopter engines are mounted using braced thrust struts"],a:3},
+{q:"Which statement about turbine engine overhaul practices is correct?",o:["Modular design facilitates individual section life limits and TBO","Module inspections are consolidated into single events","All module life limits are designed to be identical","Overhauls can be completed during routine line maintenance"],a:0},
+{q:"When stress rupture cracks are found on a first-stage turbine blade leading edge, the suspected cause is:",o:["Air seal wear","Faulty cooling shield","Over-temperature condition","Over-speed condition"],a:2}]}
+];
+}
+</script>
+</body>
+</html>
